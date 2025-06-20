@@ -1,17 +1,35 @@
 import streamlit as st
 import pandas as pd
-from utils.file_handler import handle_uploaded_file
 
-st.title("📤 Document Uploader & Preview")
+def load_file(file):
+    if file.type == "text/csv":
+        return pd.read_csv(file)
+    elif file.type in ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]:
+        return pd.read_excel(file)
+    elif file.type == "text/plain":
+        return file.getvalue().decode("utf-8")
+    else:
+        return None
 
-uploaded_files = st.file_uploader(
-    "Upload your documents (.txt, .csv, .xlsx, .mdv)", 
-    type=['txt', 'csv', 'xlsx', 'mdv'], 
-    accept_multiple_files=True
-)
+def app():
+    st.title("Document Uploader")
 
-if uploaded_files:
-    for uploaded_file in uploaded_files:
-        st.subheader(f"Preview: {uploaded_file.name}")
-        content = handle_uploaded_file(uploaded_file)
-        st.write(content)
+    uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt','csv','xlsx'])
+
+    if uploaded_files:
+        extracted_data = {}
+        for file in uploaded_files:
+            data = load_file(file)
+            extracted_data[file.name] = data
+
+        st.session_state['uploaded_data'] = extracted_data
+
+        st.success("Files uploaded and data extracted successfully!")
+
+        st.write("### Preview of uploaded data:")
+        for filename, data in extracted_data.items():
+            st.write(f"**{filename}**")
+            if isinstance(data, pd.DataFrame):
+                st.dataframe(data.head())
+            else:
+                st.text(data[:500])  # Show first 500 characters for text files
