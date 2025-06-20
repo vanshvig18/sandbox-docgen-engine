@@ -11,25 +11,24 @@ def load_file(file):
     else:
         return None
 
-def app():
-    st.title("Document Uploader")
+st.title("Document Uploader")
 
-    uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt','csv','xlsx'])
+uploaded_files = st.file_uploader("Upload your files", accept_multiple_files=True, type=['txt','csv','xlsx'])
 
-    if uploaded_files:
-        extracted_data = {}
-        for file in uploaded_files:
-            data = load_file(file)
-            extracted_data[file.name] = data
+if uploaded_files:
+    extracted_data = {}
+    for file in uploaded_files:
+        data = load_file(file)
+        extracted_data[file.name] = data
 
-        st.session_state['uploaded_data'] = extracted_data
+    st.session_state['uploaded_data'] = extracted_data
 
-        st.success("Files uploaded and data extracted successfully!")
+    st.success("Files uploaded and data extracted successfully!")
 
-        st.write("### Preview of uploaded data:")
-        for filename, data in extracted_data.items():
-            st.write(f"**{filename}**")
-            if isinstance(data, pd.DataFrame):
-                st.dataframe(data.head())
-            else:
-                st.text(data[:500])  # Show first 500 characters for text files
+    st.write("### Preview of uploaded data:")
+    for filename, data in extracted_data.items():
+        st.write(f"**{filename}**")
+        if isinstance(data, pd.DataFrame):
+            st.dataframe(data.head())
+        else:
+            st.text(data[:500])
