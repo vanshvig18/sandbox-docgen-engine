@@ -1,25 +1,32 @@
 import streamlit as st
-from utils.template_engine import generate_document
+import pandas as pd
 
-st.title("📑 Template-Based Document Generator")
+def app():
+    st.title("Template Mapping")
 
-template_option = st.selectbox(
-    "Choose Template Type",
-    ["ML Documentation", "SAR Repository"]
-)
+    if 'uploaded_data' not in st.session_state:
+        st.warning("Please upload files first on the Document Uploader page.")
+        return
 
-st.markdown("### Fill in Required Data")
-project_name = st.text_input("Project Name")
-author = st.text_input("Author Name")
-description = st.text_area("Project Description")
+    uploaded_data = st.session_state['uploaded_data']
 
-if st.button("Generate Document"):
-    output = generate_document(template_option, {
-        "project_name": project_name,
-        "author": author,
-        "description": description
-    })
-    st.success("Document Generated Successfully!")
-    st.download_button("Download Document", data=output, file_name="generated_doc.txt")
-    st.markdown("### Preview")
-    st.code(output)
+    for filename, data in uploaded_data.items():
+        st.write(f"### {filename}")
+
+        if isinstance(data, pd.DataFrame):
+            st.dataframe(data.head())
+
+            # Let user map columns from this file to template fields
+            st.write("Map columns for this file:")
+            columns = data.columns.tolist()
+            # Example: mapping 'Name' and 'Date' fields
+            name_col = st.selectbox(f"Select column for 'Name' in {filename}", options=columns, key=f"name_{filename}")
+            date_col = st.selectbox(f"Select column for 'Date' in {filename}", options=columns, key=f"date_{filename}")
+
+            st.write(f"Mapped Name column: **{name_col}**, Date column: **{date_col}**")
+
+        else:
+            st.text(data[:500])
+
+    # You can add buttons or functions here to generate documents based on mapping
+
