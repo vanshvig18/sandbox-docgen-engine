@@ -4,7 +4,7 @@ import hashlib
 
 def get_connection():
     return psycopg2.connect(
-                host="0.0.0.0",
+                host=0.0.0.0,
                 database="postgres",
                 user="postgres",
                 password="vanshvig18",
