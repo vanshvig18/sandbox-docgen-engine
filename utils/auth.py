@@ -6,7 +6,7 @@ def connect_db():
         port=5432,
         dbname="postgres",
         user="postgres",
-        password="your_password_here"  # Replace with your real password
+        password="vanshvig18"  # Replace with your real password
     )
 
 def init_db():
