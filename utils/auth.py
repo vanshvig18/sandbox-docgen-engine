@@ -1,52 +1,51 @@
 import psycopg2
+import streamlit as st
+import hashlib
 
-def connect_db():
+def get_connection():
     return psycopg2.connect(
-        host="localhost",
-        port=5432,
-        dbname="postgres",
-        user="postgres",
-        password="vanshvig18"  # Replace with your real password
+        dbname=st.secrets["DB_NAME"],
+        user=st.secrets["DB_USER"],
+        password=st.secrets["DB_PASSWORD"],
+        host=st.secrets["DB_HOST"],
+        port=st.secrets["DB_PORT"]
     )
 
 def init_db():
-    try:
-        conn = connect_db()
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(100) NOT NULL
-            );
-        """)
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print("DB Init Error:", e)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(100) NOT NULL
+        );
+    ''')
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def create_user(username, password):
+    conn = get_connection()
+    cur = conn.cursor()
     try:
-        conn = connect_db()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_pw))
         conn.commit()
+        return True
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return False
+    finally:
         cur.close()
         conn.close()
-        return True
-    except psycopg2.Error:
-        return False
 
 def authenticate_user(username, password):
-    try:
-        conn = connect_db()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-        return user is not None
-    except Exception as e:
-        print("Auth Error:", e)
-        return False
+    conn = get_connection()
+    cur = conn.cursor()
+    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+    cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_pw))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result is not None
