@@ -1,7 +1,7 @@
 import psycopg2
 import hashlib
 
-# PostgreSQL credentials
+# Local PostgreSQL credentials (update if needed)
 DB_NAME = "postgres"
 DB_USER = "postgres"
 DB_PASSWORD = "vanshvig18"
@@ -9,13 +9,16 @@ DB_HOST = "localhost"
 DB_PORT = "5432"
 
 def get_connection():
-    return psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT
-    )
+    try:
+        return psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
+            port=DB_PORT
+        )
+    except psycopg2.OperationalError as e:
+        raise RuntimeError(f"Database connection failed: {e}")
 
 def init_db():
     conn = get_connection()
