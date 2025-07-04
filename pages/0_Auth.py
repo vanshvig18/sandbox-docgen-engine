@@ -1,31 +1,36 @@
 import streamlit as st
-from utils.auth import init_db, register_user, login_user
+from utils.auth import authenticate_user, create_user, init_db
 
+st.set_page_config(page_title="Authentication", page_icon="🔐")
 st.title("User Authentication")
 
-menu = ["Login", "Register"]
-choice = st.sidebar.selectbox("Menu", menu)
-
+# Initialize the PostgreSQL DB (optional if table is already created)
 init_db()
+
+# Sidebar menu
+menu = ["Login", "Sign Up"]
+choice = st.sidebar.selectbox("Menu", menu)
 
 if choice == "Login":
     st.subheader("Login")
-
     username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    password = st.text_input("Password", type='password')
 
     if st.button("Login"):
-        if login_user(username, password):
-            st.success(f"Welcome {username}")
+        if authenticate_user(username, password):
+            st.success(f"Welcome, {username}!")
+            st.session_state['authenticated'] = True
+            st.session_state['username'] = username
         else:
             st.error("Invalid credentials")
 
-elif choice == "Register":
-    st.subheader("Create Account")
+elif choice == "Sign Up":
+    st.subheader("Create New Account")
+    new_user = st.text_input("Username")
+    new_password = st.text_input("Password", type='password')
 
-    new_user = st.text_input("New Username")
-    new_pass = st.text_input("New Password", type="password")
-
-    if st.button("Register"):
-        register_user(new_user, new_pass)
-        st.success("Account created successfully. Go to Login.")
+    if st.button("Sign Up"):
+        if create_user(new_user, new_password):
+            st.success("Account created successfully!")
+        else:
+            st.error("Username already exists or error occurred.")
