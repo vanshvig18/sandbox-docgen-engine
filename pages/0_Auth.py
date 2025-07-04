@@ -1,17 +1,32 @@
 import streamlit as st
-import psycopg2
+from utils.auth import init_db, create_user, authenticate_user
 
-st.title("🔌 DB Connection Test")
+st.set_page_config(page_title="Authentication", page_icon="🔐")
+st.title("User Authentication")
 
-try:
-    conn = psycopg2.connect(
-        dbname="postgres",
-        user="postgres",
-        password="vanshvig18",
-        host="localhost",
-        port="5432"
-    )
-    st.success("✅ Connected to PostgreSQL successfully!")
-    conn.close()
-except Exception as e:
-    st.error(f"❌ Connection failed:\n\n{e}")
+# Initialize the users table
+init_db()
+
+# Sidebar menu
+menu = ["Login", "Sign Up"]
+choice = st.sidebar.selectbox("Menu", menu)
+
+if choice == "Login":
+    st.subheader("Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type='password')
+    if st.button("Login"):
+        if authenticate_user(username, password):
+            st.success(f"Welcome, {username}!")
+        else:
+            st.error("Invalid username or password")
+
+elif choice == "Sign Up":
+    st.subheader("Create New Account")
+    new_user = st.text_input("New Username")
+    new_password = st.text_input("New Password", type='password')
+    if st.button("Sign Up"):
+        if create_user(new_user, new_password):
+            st.success("Account created successfully!")
+        else:
+            st.error("Username already exists or something went wrong")
