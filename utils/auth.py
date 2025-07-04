@@ -4,13 +4,11 @@ import psycopg2
 import bcrypt
 
 def connect_db():
-    db_info = st.secrets["database"]
-    conn = psycopg2.connect(
-        host=db_info["host"],
-        database=db_info["database"],
-        user=db_info["user"],
-        password=db_info["password"],
-        port=db_info["port"]
+        host="localhost",
+        port=5432,
+        dbname="postgres",
+        user="postgres",
+        password="vanshbvig18"
     )
     return conn
 
