@@ -4,11 +4,11 @@ import hashlib
 
 def get_connection():
     return psycopg2.connect(
-        dbname=st.secrets["DB_NAME"],
-        user=st.secrets["DB_USER"],
-        password=st.secrets["DB_PASSWORD"],
-        host=st.secrets["DB_HOST"],
-        port=st.secrets["DB_PORT"]
+                host="localhost",
+                database="postgres",
+                user="postgres",
+                password="vanshvig18",
+                port="5432",
     )
 
 def init_db():
