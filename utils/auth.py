@@ -1,52 +1,57 @@
 import psycopg2
+import streamlit as st
 
-def connect_db():
-    return psycopg2.connect(
-        host="localhost",
-        port=5432,
-        dbname="postgres",
-        user="postgres",
-        password="vanshvig18"  # Replace with your real password
-    )
+# Database connection parameters
+conn_params = {
+    "dbname": "postgres",
+    "user": "postgres",
+    "password": "vanshvig18",
+    "host": "localhost",
+    "port": 5432
+}
+
+def get_connection():
+    return psycopg2.connect(**conn_params)
 
 def init_db():
-    try:
-        conn = connect_db()
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(100) NOT NULL
-            );
-        """)
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print("DB Init Error:", e)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL
+        );
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def create_user(username, password):
     try:
-        conn = connect_db()
+        conn = get_connection()
         cur = conn.cursor()
         cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
         conn.commit()
         cur.close()
         conn.close()
         return True
-    except psycopg2.Error:
+    except Exception as e:
+        st.error(f"Error creating user: {e}")
         return False
 
 def authenticate_user(username, password):
     try:
-        conn = connect_db()
+        conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
-        user = cur.fetchone()
+        cur.execute("SELECT password FROM users WHERE username = %s", (username,))
+        result = cur.fetchone()
         cur.close()
         conn.close()
-        return user is not None
+
+        if result and result[0] == password:
+            return True
+        else:
+            return False
     except Exception as e:
-        print("Auth Error:", e)
+        st.error(f"Authentication error: {e}")
         return False
