@@ -3,11 +3,12 @@ from psycopg2 import sql
 import bcrypt
 
 # Local DB config
-DB_NAME = "docgen"
-DB_USER = "docuser"
-DB_PASSWORD = "docpass"
+DB_NAME = "postgres"
+DB_USER = "postgres"
+DB_PASSWORD = "vanshvig18"
 DB_HOST = "localhost"
 DB_PORT = "5432"
+
 
 
 def get_connection():
