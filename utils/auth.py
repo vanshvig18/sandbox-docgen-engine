@@ -1,51 +1,52 @@
-import os
-import streamlit as st
 import psycopg2
-import bcrypt
 
 def connect_db():
+    return psycopg2.connect(
         host="localhost",
         port=5432,
         dbname="postgres",
         user="postgres",
-        password="vanshbvig18"
+        password="your_password_here"  # Replace with your real password
     )
-    return conn
 
 def init_db():
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        );
-    """)
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(100) NOT NULL
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("DB Init Error:", e)
 
-def signup_user(username, password):
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
-    if cur.fetchone():
-        return False
-    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode()
-    cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_pw))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return True
-
-def login_user(username, password):
-    conn = connect_db()
-    cur = conn.cursor()
-    cur.execute("SELECT password FROM users WHERE username=%s", (username,))
-    result = cur.fetchone()
-    cur.close()
-    conn.close()
-    if result and bcrypt.checkpw(password.encode('utf-8'), result[0].encode()):
+def create_user(username, password):
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        conn.commit()
+        cur.close()
+        conn.close()
         return True
-    return False
+    except psycopg2.Error:
+        return False
+
+def authenticate_user(username, password):
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        return user is not None
+    except Exception as e:
+        print("Auth Error:", e)
+        return False
