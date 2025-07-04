@@ -1,59 +1,52 @@
 import psycopg2
-import hashlib
 
-# Local PostgreSQL credentials (update if needed)
-DB_NAME = "postgres"
-DB_USER = "postgres"
-DB_PASSWORD = "vanshvig18"
-DB_HOST = "localhost"
-DB_PORT = "5432"
-
-def get_connection():
-    try:
-        return psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=DB_PORT
-        )
-    except psycopg2.OperationalError as e:
-        raise RuntimeError(f"Database connection failed: {e}")
+def connect_db():
+    return psycopg2.connect(
+        host="localhost",
+        port=5432,
+        dbname="postgres",
+        user="postgres",
+        password="your_password_here"  # Replace with your real password
+    )
 
 def init_db():
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL
-        );
-    """)
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(100) NOT NULL
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print("DB Init Error:", e)
 
 def create_user(username, password):
-    conn = get_connection()
-    cur = conn.cursor()
     try:
-        hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_password))
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
         conn.commit()
+        cur.close()
+        conn.close()
         return True
     except psycopg2.Error:
         return False
-    finally:
-        cur.close()
-        conn.close()
 
 def authenticate_user(username, password):
-    conn = get_connection()
-    cur = conn.cursor()
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
-    cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_password))
-    result = cur.fetchone()
-    cur.close()
-    conn.close()
-    return result is not None
+    try:
+        conn = connect_db()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
+        user = cur.fetchone()
+        cur.close()
+        conn.close()
+        return user is not None
+    except Exception as e:
+        print("Auth Error:", e)
+        return False
