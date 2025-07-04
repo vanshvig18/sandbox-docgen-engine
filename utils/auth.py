@@ -3,13 +3,19 @@ import streamlit as st
 import hashlib
 
 def get_connection():
-    return psycopg2.connect(
-        dbname=st.secrets["DB_NAME"],
-        user=st.secrets["DB_USER"],
-        password=st.secrets["DB_PASSWORD"],
-        host=st.secrets["DB_HOST"],
-        port=st.secrets["DB_PORT"]
-    )
+    try:
+        conn = psycopg2.connect(
+            dbname=st.secrets["DB_NAME"],
+            user=st.secrets["DB_USER"],
+            password=st.secrets["DB_PASSWORD"],
+            host=st.secrets["DB_HOST"],
+            port=st.secrets["DB_PORT"]
+        )
+        return conn
+    except Exception as e:
+        st.error(f"Database connection failed: {e}")
+        raise
+
 
 def init_db():
     conn = get_connection()
