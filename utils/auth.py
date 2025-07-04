@@ -1,17 +1,17 @@
 import psycopg2
-import streamlit as st
+import hashlib
 
-# Database connection parameters
-conn_params = {
+# PostgreSQL connection config
+DB_CONFIG = {
     "dbname": "postgres",
     "user": "postgres",
     "password": "vanshvig18",
     "host": "localhost",
-    "port": 5432
+    "port": "5432"
 }
 
 def get_connection():
-    return psycopg2.connect(**conn_params)
+    return psycopg2.connect(**DB_CONFIG)
 
 def init_db():
     conn = get_connection()
@@ -20,38 +20,38 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             password TEXT NOT NULL
-        );
+        )
     """)
     conn.commit()
     cur.close()
     conn.close()
 
-def create_user(username, password):
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def add_user(username, password):
+    hashed = hash_password(password)
+    conn = get_connection()
+    cur = conn.cursor()
     try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, password))
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed))
         conn.commit()
+        return True
+    except psycopg2.IntegrityError:
+        conn.rollback()
+        return False
+    finally:
         cur.close()
         conn.close()
-        return True
-    except Exception as e:
-        st.error(f"Error creating user: {e}")
-        return False
 
 def authenticate_user(username, password):
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT password FROM users WHERE username = %s", (username,))
-        result = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if result and result[0] == password:
-            return True
-        else:
-            return False
-    except Exception as e:
-        st.error(f"Authentication error: {e}")
-        return False
+    hashed = hash_password(password)
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT password FROM users WHERE username = %s", (username,))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    if result and result[0] == hashed:
+        return True
+    return False
