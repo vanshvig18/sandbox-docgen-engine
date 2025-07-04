@@ -1,15 +1,12 @@
 import psycopg2
-from psycopg2 import sql
-import bcrypt
+import hashlib
 
-# Local DB config
+# PostgreSQL credentials
 DB_NAME = "postgres"
 DB_USER = "postgres"
 DB_PASSWORD = "vanshvig18"
 DB_HOST = "localhost"
 DB_PORT = "5432"
-
-
 
 def get_connection():
     return psycopg2.connect(
@@ -28,33 +25,32 @@ def init_db():
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
-        )
+        );
     """)
     conn.commit()
     cur.close()
     conn.close()
 
-def register_user(username, password):
+def create_user(username, password):
     conn = get_connection()
     cur = conn.cursor()
-    hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     try:
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_pw))
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_password))
         conn.commit()
+        return True
     except psycopg2.Error:
-        conn.rollback()
-        raise
+        return False
     finally:
         cur.close()
         conn.close()
 
-def login_user(username, password):
+def authenticate_user(username, password):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT password FROM users WHERE username = %s", (username,))
-    user = cur.fetchone()
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_password))
+    result = cur.fetchone()
     cur.close()
     conn.close()
-    if user and bcrypt.checkpw(password.encode(), user[0].encode()):
-        return True
-    return False
+    return result is not None
