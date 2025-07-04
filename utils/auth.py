@@ -8,7 +8,7 @@ def get_connection():
                 database="postgres",
                 user="postgres",
                 password="vanshvig18",
-                port="5432",
+                port=5432,
     )
 
 def init_db():
