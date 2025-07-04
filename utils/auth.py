@@ -1,13 +1,11 @@
 import psycopg2
-import hashlib
 
-# PostgreSQL connection config
 DB_CONFIG = {
     "dbname": "postgres",
     "user": "postgres",
     "password": "vanshvig18",
     "host": "localhost",
-    "port": "5432"
+    "port": "5432",
 }
 
 def get_connection():
@@ -15,43 +13,30 @@ def get_connection():
 
 def init_db():
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("""
+    cursor = conn.cursor()
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             username TEXT PRIMARY KEY,
             password TEXT NOT NULL
-        )
+        );
     """)
     conn.commit()
-    cur.close()
+    cursor.close()
     conn.close()
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def add_user(username, password):
-    hashed = hash_password(password)
+def register_user(username, password):
     conn = get_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed))
-        conn.commit()
-        return True
-    except psycopg2.IntegrityError:
-        conn.rollback()
-        return False
-    finally:
-        cur.close()
-        conn.close()
-
-def authenticate_user(username, password):
-    hashed = hash_password(password)
-    conn = get_connection()
-    cur = conn.cursor()
-    cur.execute("SELECT password FROM users WHERE username = %s", (username,))
-    result = cur.fetchone()
-    cur.close()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (username, password) VALUES (%s, %s) ON CONFLICT DO NOTHING", (username, password))
+    conn.commit()
+    cursor.close()
     conn.close()
-    if result and result[0] == hashed:
-        return True
-    return False
+
+def login_user(username, password):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return user is not None
