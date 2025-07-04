@@ -1,14 +1,15 @@
 import psycopg2
-import os
-
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:<your_password>@db.xwptfkdydcadyjijhswr.supabase.co:5432/postgres?sslmode=require")
+import streamlit as st
+import hashlib
 
 def get_connection():
-    try:
-        return psycopg2.connect(DATABASE_URL)
-    except Exception as e:
-        print("Database connection failed:", e)
-        raise
+    return psycopg2.connect(
+        dbname=st.secrets["DB_NAME"],
+        user=st.secrets["DB_USER"],
+        password=st.secrets["DB_PASSWORD"],
+        host=st.secrets["DB_HOST"],
+        port=st.secrets["DB_PORT"]
+    )
 
 def init_db():
     conn = get_connection()
@@ -23,3 +24,28 @@ def init_db():
     conn.commit()
     cur.close()
     conn.close()
+
+def create_user(username, password):
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+        cur.execute("INSERT INTO users (username, password) VALUES (%s, %s)", (username, hashed_pw))
+        conn.commit()
+        return True
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return False
+    finally:
+        cur.close()
+        conn.close()
+
+def authenticate_user(username, password):
+    conn = get_connection()
+    cur = conn.cursor()
+    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+    cur.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, hashed_pw))
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result is not None
